@@ -7,14 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="2023-II-CSE.xlsx" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Include="2023-II-CSE.xlsx" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="IronXL.Excel" Version="2024.2.25" />
     <PackageReference Include="Microsoft.Office.Interop.Excel" Version="15.0.4795.1001" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.3" />
