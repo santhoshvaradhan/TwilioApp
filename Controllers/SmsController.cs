@@ -10,6 +10,7 @@ using System.Net.Http;
 using System.Web;
 using System.IO;
 using Microsoft.IdentityModel.Tokens;
+using System.Net.Mail;
 
 namespace TwilioApp.Controllers
 {
@@ -27,7 +28,7 @@ namespace TwilioApp.Controllers
 
 
         [HttpPost("SendSms")]
-        public ActionResult UploadFile(IFormFile file)
+        public ActionResult UploadFile(IFormFile file ,string year,string doingyear,string dept,string examtype)
         {
             List<string> headers = new List<string>();
             string successMessage = "Sms sent successfully.";
@@ -69,32 +70,14 @@ namespace TwilioApp.Controllers
                                
                                 values.Add(cell.ToString());
                             }
+                            else
+                            {
+                                cell.Value = Sms_function();
+                                break;
+                            }
                         }
 
-                        Sms messageObject = FrameMessage(headers, values);
-                       
-
-                        if (messageObject != null && !string.IsNullOrEmpty(messageObject.Message))
-                        {
-                            Console.WriteLine(messageObject.Message);
-                            //string accountSid = "ACbb71961314f4d8998bbbba60128b9a65";
-                            //string authToken = "f4044bf8e17abb2c0117272669d8da01";
-                            //TwilioClient.Init(accountSid, authToken);
-
-                            //var message = MessageResource.Create(
-                            //    body: messageObject.Message,
-                            //    from: new Twilio.Types.PhoneNumber("+14403726082"),
-                            //    to: new Twilio.Types.PhoneNumber("+91" + messageObject.ToNumber)
-                            //);
-                            //successMessage = !string.IsNullOrEmpty(message.Sid) ? string.Format("Sms sent successfully to : {0}", messageObject.ToNumber) : "Unable to send sms.";
-
-                            messageObject.ToNumber = string.Empty;
-                            messageObject.Message = string.Empty;
-                            values.Clear();
-                    
-
-
-                        }
+                        
                         
                     }
                    
@@ -105,7 +88,36 @@ namespace TwilioApp.Controllers
                 }
                 
             }
+             string Sms_function()
+            {
+                Sms messageObject = FrameMessage(headers, values);
 
+
+                if (messageObject != null && !string.IsNullOrEmpty(messageObject.Message))
+                {
+                    Console.WriteLine(messageObject.Message);
+                    string accountSid = "ACbb71961314f4d8998bbbba60128b9a65";
+                    string authToken = "f4044bf8e17abb2c0117272669d8da01";
+                    TwilioClient.Init(accountSid, authToken);
+
+                    var message = MessageResource.Create(
+                        body: messageObject.Message,
+                        from: new Twilio.Types.PhoneNumber("+14403726082"),
+                        to: new Twilio.Types.PhoneNumber("+91" + messageObject.ToNumber)
+                    );
+                    successMessage = !string.IsNullOrEmpty(message.Sid) ? string.Format("Sms sent successfully to : {0}", messageObject.ToNumber) : "Unable to send sms.";
+
+                    messageObject.ToNumber = string.Empty;
+                    messageObject.Message = string.Empty;
+                    values.Clear();
+                    return successMessage;
+                }
+                return "Message is empty";
+            }
+            workbook.SaveAs("D:\\file.xlsx");
+
+            System.IO.File.Move("D:\\file.xlsx", String.Format("D:\\{0}-{1}-{2}-{3}-SMSstatus.xlsx", year, doingyear, dept,examtype));
+            Email_function(year,doingyear,dept,examtype);
             return Ok(successMessage);
         }
 
@@ -115,7 +127,7 @@ namespace TwilioApp.Controllers
         {
            
             Sms messageObject = new Sms();
-            for (int i = 0; i < keyheader.Count; i++)
+            for (int i = 0; i < keyheader.Count-1; i++)
             {
                 if (keyheader[i] == "SECTION" || keyheader[i] == "ENROLLNO" || keyheader[i] == "NAME")
                 {
@@ -125,6 +137,10 @@ namespace TwilioApp.Controllers
                 {
                     messageObject.ToNumber = vlaues[i];
 
+                }
+                else if (keyheader[i]=="MESSAGESTATUS")
+                {
+                    continue;
                 }
                 else
                 {
@@ -156,7 +172,25 @@ namespace TwilioApp.Controllers
                 }
             }
         }
-
+      
+        public static void Email_function(string year, string doingyear, string dept,string examtype)
+        {
+            
+            System.Console.WriteLine("Sent");
+            MailMessage mail = new MailMessage();
+            SmtpClient SmtpServer = new SmtpClient("live.smtp.mailtrap.io");
+            mail.From = new MailAddress("mailtrap@demomailtrap.com");
+            mail.To.Add("sandy.tech02@gmail.com");
+            mail.Subject = String.Format("SMS Status of {0}-{1}-{2}-{3}",year,doingyear,dept,examtype);
+            mail.Body = "SMS Successully Send to parents,verify message status in below sheet";
+            System.Net.Mail.Attachment attachment;
+            attachment = new System.Net.Mail.Attachment(String.Format("D:\\{0}-{1}-{2}-{3}-SMSstatus.xlsx", year, doingyear, dept,examtype));
+            mail.Attachments.Add(attachment);
+            SmtpServer.Port = 587;
+            SmtpServer.Credentials = new System.Net.NetworkCredential("api", "4d90e7d765b6e553a51bcbd8ce692986");
+            SmtpServer.EnableSsl = true;
+            SmtpServer.Send(mail);
+        }
 
     }
 }
