@@ -1,8 +1,7 @@
-﻿using Google.Apis.Sheets.v4.Data;
+﻿using Google.Apis.Auth.OAuth2;
+using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
 using Microsoft.AspNetCore.Mvc;
-using Google.Apis.Auth.OAuth2;
-using Google.Apis.Services;
 
 namespace TwilioApp.Controllers
 {
@@ -20,7 +19,7 @@ namespace TwilioApp.Controllers
         {
             GoogleCredential credential;
             //Reading Credentials File...
-            using (var stream = new FileStream("client_secret.json", FileMode.Open, FileAccess.Read))
+            using (var stream = new FileStream("app_client_secret.json", FileMode.Open, FileAccess.Read))
             {
                 credential = GoogleCredential.FromStream(stream)
                     .CreateScoped(Scopes);
@@ -31,19 +30,26 @@ namespace TwilioApp.Controllers
                 HttpClientInitializer = credential,
                 ApplicationName = ApplicationName,
             });
-            var range = $"{sheet}!A:E";
+
+
+            var range = $"{sheet}";
             SpreadsheetsResource.ValuesResource.GetRequest request =
                     service.Spreadsheets.Values.Get(SpreadsheetId, range);
             // Ecexuting Read Operation...
             var response = request.Execute();
-            // Getting all records from Column A to E...
+            
+            // Getting all records from Column...
             IList<IList<object>> values = response.Values;
+            
             if (values != null && values.Count > 0)
             {
                 foreach (var row in values)
                 {
-                    // Writing Data on Console...
-                    Console.WriteLine("{0} | {1} | {2} | {3} | {4} ", row[0], row[1], row[2], row[3], row[4]);
+                    
+                    foreach(var item in row)
+                    {
+                        Console.WriteLine(item);
+                    }
                 }
             }
             else

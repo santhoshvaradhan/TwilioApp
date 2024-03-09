@@ -11,7 +11,10 @@ using System.Web;
 using System.IO;
 using Microsoft.IdentityModel.Tokens;
 using System.Net.Mail;
-
+using System.Net.Http.Headers;
+using Twilio.TwiML.Messaging;
+using RestSharp;
+using Newtonsoft.Json;
 namespace TwilioApp.Controllers
 {
     [ApiController]
@@ -28,7 +31,7 @@ namespace TwilioApp.Controllers
 
 
         [HttpPost("SendSms")]
-        public ActionResult UploadFile(IFormFile file ,string year,string doingyear,string dept,string examtype)
+        public ActionResult UploadFile(IFormFile file, string year, string doingyear, string dept, string examtype)
         {
             List<string> headers = new List<string>();
             string successMessage = "Sms sent successfully.";
@@ -58,16 +61,16 @@ namespace TwilioApp.Controllers
 
                 if (string.IsNullOrWhiteSpace(sheet.Rows[index].ToString()) == false)
                 {
-                   
+
                     if (Convert.ToString(sheet.GetRow(0).RangeAddress) != Convert.ToString(sheet.Rows[index].RangeAddress))
                     {
-                       
+
                         foreach (var cell in sheet.Rows[index])
                         {
-                           
+
                             if (cell.Value != null && !string.IsNullOrEmpty(cell.Value.ToString()))
                             {
-                               
+
                                 values.Add(cell.ToString());
                             }
                             else
@@ -77,18 +80,18 @@ namespace TwilioApp.Controllers
                             }
                         }
 
-                        
-                        
+
+
                     }
-                   
+
                 }
                 else
-                { 
+                {
                     break;
                 }
-                
+
             }
-             string Sms_function()
+            string Sms_function()
             {
                 Sms messageObject = FrameMessage(headers, values);
 
@@ -116,18 +119,18 @@ namespace TwilioApp.Controllers
             }
             workbook.SaveAs("D:\\file.xlsx");
 
-            System.IO.File.Move("D:\\file.xlsx", String.Format("D:\\{0}-{1}-{2}-{3}-SMSstatus.xlsx", year, doingyear, dept,examtype));
-            Email_function(year,doingyear,dept,examtype);
+            System.IO.File.Move("D:\\file.xlsx", String.Format("D:\\{0}-{1}-{2}-{3}-SMSstatus.xlsx", year, doingyear, dept, examtype));
+            Email_function(year, doingyear, dept, examtype);
             return Ok(successMessage);
         }
 
-       
+
 
         public static Sms FrameMessage(List<string> keyheader, List<string> vlaues)
         {
-           
+
             Sms messageObject = new Sms();
-            for (int i = 0; i < keyheader.Count-1; i++)
+            for (int i = 0; i < keyheader.Count - 1; i++)
             {
                 if (keyheader[i] == "SECTION" || keyheader[i] == "ENROLLNO" || keyheader[i] == "NAME")
                 {
@@ -138,7 +141,7 @@ namespace TwilioApp.Controllers
                     messageObject.ToNumber = vlaues[i];
 
                 }
-                else if (keyheader[i]=="MESSAGESTATUS")
+                else if (keyheader[i] == "MESSAGESTATUS")
                 {
                     continue;
                 }
@@ -149,7 +152,7 @@ namespace TwilioApp.Controllers
                 }
 
             }
-            messageObject.Message = "HI THIS IS MESSAGE FROM MAILAM ENGINEERING COLLEGE\nIAT-1 RESULT\n" + messageObject.Message + "Thank you!";          
+            messageObject.Message = "HI THIS IS MESSAGE FROM MAILAM ENGINEERING COLLEGE\nIAT-1 RESULT\n" + messageObject.Message + "Thank you!";
             return messageObject;
         }
 
@@ -172,25 +175,62 @@ namespace TwilioApp.Controllers
                 }
             }
         }
-      
-        public static void Email_function(string year, string doingyear, string dept,string examtype)
+
+        public static void Email_function(string year, string doingyear, string dept, string examtype)
         {
-            
+
             System.Console.WriteLine("Sent");
             MailMessage mail = new MailMessage();
             SmtpClient SmtpServer = new SmtpClient("live.smtp.mailtrap.io");
             mail.From = new MailAddress("mailtrap@demomailtrap.com");
             mail.To.Add("sandy.tech02@gmail.com");
-            mail.Subject = String.Format("SMS Status of {0}-{1}-{2}-{3}",year,doingyear,dept,examtype);
+            mail.Subject = String.Format("SMS Status of {0}-{1}-{2}-{3}", year, doingyear, dept, examtype);
             mail.Body = "SMS Successully Send to parents,verify message status in below sheet";
             System.Net.Mail.Attachment attachment;
-            attachment = new System.Net.Mail.Attachment(String.Format("D:\\{0}-{1}-{2}-{3}-SMSstatus.xlsx", year, doingyear, dept,examtype));
+            attachment = new System.Net.Mail.Attachment(String.Format("D:\\{0}-{1}-{2}-{3}-SMSstatus.xlsx", year, doingyear, dept, examtype));
             mail.Attachments.Add(attachment);
             SmtpServer.Port = 587;
             SmtpServer.Credentials = new System.Net.NetworkCredential("api", "4d90e7d765b6e553a51bcbd8ce692986");
             SmtpServer.EnableSsl = true;
             SmtpServer.Send(mail);
         }
+        [HttpPost("translationapi")]
+        public async Task Translation_function()
+        {
+            var client = new HttpClient();
+            var request = new HttpRequestMessage
+            {
+                Method = HttpMethod.Post,
+                RequestUri = new Uri("https://google-translate-v21.p.rapidapi.com/translate"),
+                Headers =
+    {
+        { "X-RapidAPI-Key", "cefa651fb5msh2e15b18d2fa2bb3p153e36jsn7beb3513cb7b" },
+        { "X-RapidAPI-Host", "google-translate-v21.p.rapidapi.com" },
+    },
+                Content = new StringContent("{\r\"text_to_translate\": \"Hello how are you\",\r\"dest\": \"hindi\"\r }")
 
+                {
+                    Headers =
+
+        {
+                    ContentType = new MediaTypeHeaderValue("application/json")
+
+        }
+                }
+            };
+            using (var response = await client.SendAsync(request))
+            {
+                response.EnsureSuccessStatusCode();
+                var body = await response.Content.ReadAsStringAsync();
+                Console.WriteLine(body);
+                dynamic result = JsonConvert.SerializeObject(JsonConvert.DeserializeObject(body), Formatting.Indented);
+                
+          
+                    
+                
+            }
+            
+
+        }
     }
 }
