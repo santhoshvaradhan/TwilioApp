@@ -1,26 +1,19 @@
-using IronXL;
+﻿using IronXL;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Office.Interop.Excel;
-using System.Data;
-using System.Net;
-using System.Reflection;
 using Twilio;
 using Twilio.Rest.Api.V2010.Account;
-using System.Net.Http;
-using System.Web;
-using System.IO;
-using Microsoft.IdentityModel.Tokens;
 using System.Net.Mail;
 using System.Net.Http.Headers;
-using Twilio.TwiML.Messaging;
-using RestSharp;
 using Newtonsoft.Json;
-namespace TwilioApp.Controllers
+using System.Text;
+
+namespace TwilioApp.Controllers.SMS
 {
     [ApiController]
     [Route("[controller]")]
     public class SmsController : ControllerBase
     {
+       public static string successMessage_sms = null;
 
         private readonly ILogger<SmsController> _logger;
 
@@ -31,7 +24,7 @@ namespace TwilioApp.Controllers
 
 
         [HttpPost("SendSms")]
-        public ActionResult UploadFile(IFormFile file, string year, string doingyear, string dept, string examtype)
+        public ActionResult UploadFile(IFormFile file)
         {
             List<string> headers = new List<string>();
             string successMessage = "Sms sent successfully.";
@@ -75,7 +68,7 @@ namespace TwilioApp.Controllers
                             }
                             else
                             {
-                                cell.Value = Sms_function();
+                                cell.Value = Sms_function(headers,values);
                                 break;
                             }
                         }
@@ -91,37 +84,38 @@ namespace TwilioApp.Controllers
                 }
 
             }
-            string Sms_function()
-            {
-                Sms messageObject = FrameMessage(headers, values);
+            //workbook.SaveAs("D:\\file.xlsx");
 
-
-                if (messageObject != null && !string.IsNullOrEmpty(messageObject.Message))
-                {
-                    Console.WriteLine(messageObject.Message);
-                    string accountSid = "ACbb71961314f4d8998bbbba60128b9a65";
-                    string authToken = "f4044bf8e17abb2c0117272669d8da01";
-                    TwilioClient.Init(accountSid, authToken);
-
-                    var message = MessageResource.Create(
-                        body: messageObject.Message,
-                        from: new Twilio.Types.PhoneNumber("+14403726082"),
-                        to: new Twilio.Types.PhoneNumber("+91" + messageObject.ToNumber)
-                    );
-                    successMessage = !string.IsNullOrEmpty(message.Sid) ? string.Format("Sms sent successfully to : {0}", messageObject.ToNumber) : "Unable to send sms.";
-
-                    messageObject.ToNumber = string.Empty;
-                    messageObject.Message = string.Empty;
-                    values.Clear();
-                    return successMessage;
-                }
-                return "Message is empty";
-            }
-            workbook.SaveAs("D:\\file.xlsx");
-
-            System.IO.File.Move("D:\\file.xlsx", String.Format("D:\\{0}-{1}-{2}-{3}-SMSstatus.xlsx", year, doingyear, dept, examtype));
-            Email_function(year, doingyear, dept, examtype);
+           // System.IO.File.Move("D:\\file.xlsx", String.Format("D:\\{0}-{1}-{2}-{3}-SMSstatus.xlsx", year, doingyear, dept, examtype));
+           // Email_function(year, doingyear, dept, examtype);
             return Ok(successMessage);
+        }
+
+        public static string Sms_function(List<string> headers, List<string> values)
+        {
+            Sms messageObject = FrameMessage(headers, values);
+
+
+            if (messageObject != null && !string.IsNullOrEmpty(messageObject.Message))
+            {
+                Console.WriteLine(messageObject.Message);
+                string accountSid = "ACbb71961314f4d8998bbbba60128b9a65";
+                string authToken = "f4044bf8e17abb2c0117272669d8da01";
+                TwilioClient.Init(accountSid, authToken);
+
+                var message = MessageResource.Create(
+                    body: messageObject.Message,
+                    from: new Twilio.Types.PhoneNumber("+14403726082"),
+                    to: new Twilio.Types.PhoneNumber("+91" + messageObject.ToNumber)
+                );
+                successMessage_sms = !string.IsNullOrEmpty(message.Sid) ? string.Format("Sms sent successfully to : {0}", messageObject.ToNumber) : "Unable to send sms.";
+
+                messageObject.ToNumber = string.Empty;
+                messageObject.Message = string.Empty;
+                values.Clear();
+                return successMessage_sms;
+            }
+            return "Message is empty";
         }
 
 
@@ -134,7 +128,7 @@ namespace TwilioApp.Controllers
             {
                 if (keyheader[i] == "SECTION" || keyheader[i] == "ENROLLNO" || keyheader[i] == "NAME")
                 {
-                    messageObject.Message += String.Format("{0}--{1}\n", keyheader[i], vlaues[i]);
+                    messageObject.Message += String.Format("{0}--{1}\n", keyheader[i], vlaues[i]) ;
                 }
                 else if (keyheader[i] == "MOBILENUMBER")
                 {
@@ -144,6 +138,10 @@ namespace TwilioApp.Controllers
                 else if (keyheader[i] == "MESSAGESTATUS")
                 {
                     continue;
+                }
+                else if (keyheader[i]=="ATTENDANCE")
+                {
+                    messageObject.Message += String.Format("{0}--{1}\n", keyheader[i], vlaues[i].Contains("%") ? vlaues[i] : Convert.ToString(Math.Round(Convert.ToDecimal(vlaues[i]) * 100)) + "%");
                 }
                 else
                 {
@@ -194,43 +192,6 @@ namespace TwilioApp.Controllers
             SmtpServer.EnableSsl = true;
             SmtpServer.Send(mail);
         }
-        [HttpPost("translationapi")]
-        public async Task Translation_function()
-        {
-            var client = new HttpClient();
-            var request = new HttpRequestMessage
-            {
-                Method = HttpMethod.Post,
-                RequestUri = new Uri("https://google-translate-v21.p.rapidapi.com/translate"),
-                Headers =
-    {
-        { "X-RapidAPI-Key", "cefa651fb5msh2e15b18d2fa2bb3p153e36jsn7beb3513cb7b" },
-        { "X-RapidAPI-Host", "google-translate-v21.p.rapidapi.com" },
-    },
-                Content = new StringContent("{\r\"text_to_translate\": \"Hello how are you\",\r\"dest\": \"hindi\"\r }")
-
-                {
-                    Headers =
-
-        {
-                    ContentType = new MediaTypeHeaderValue("application/json")
-
-        }
-                }
-            };
-            using (var response = await client.SendAsync(request))
-            {
-                response.EnsureSuccessStatusCode();
-                var body = await response.Content.ReadAsStringAsync();
-                Console.WriteLine(body);
-                dynamic result = JsonConvert.SerializeObject(JsonConvert.DeserializeObject(body), Formatting.Indented);
-                
-          
-                    
-                
-            }
-            
-
-        }
+       
     }
 }
