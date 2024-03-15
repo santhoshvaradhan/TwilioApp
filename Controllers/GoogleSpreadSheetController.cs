@@ -2,8 +2,12 @@
 using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
+using Microsoft.VisualBasic;
+using System.IO;
+using System.Text.Json;
+using Twilio.Base;
 using TwilioApp.Controllers.SMS;
+using TwilioApp.Models;
 
 namespace TwilioApp.Controllers
 {
@@ -19,7 +23,7 @@ namespace TwilioApp.Controllers
         public string SpreadsheetId = "1BuADmesS50Kr_d7hUnYmR1tXU08boqt2K-Ux2bnYM7w";
         SheetsService service;
        
-        [HttpGet]
+        [HttpGet]    
         public void Index()
         {
             
@@ -67,6 +71,20 @@ namespace TwilioApp.Controllers
             {
                 Console.WriteLine("No data found.");
             }
+        }
+        [HttpPost("User_verification")]
+        public dynamic User_Verfication(string email,string password)
+        {
+
+            using (StreamReader r = new StreamReader("D:\\project\\User_verification.json"))
+            {
+                string json = r.ReadToEnd();
+                 var source = JsonSerializer.Deserialize<List<User>>(json);
+                return source;
+
+            }
+
+           
         }
        
     }

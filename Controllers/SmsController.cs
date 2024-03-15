@@ -99,20 +99,20 @@ namespace TwilioApp.Controllers.SMS
             if (messageObject != null && !string.IsNullOrEmpty(messageObject.Message))
             {
                 Console.WriteLine(messageObject.Message);
-                string accountSid = "ACbb71961314f4d8998bbbba60128b9a65";
-                string authToken = "f4044bf8e17abb2c0117272669d8da01";
-                TwilioClient.Init(accountSid, authToken);
+                //string accountSid = "ACbb71961314f4d8998bbbba60128b9a65";
+                //string authToken = "f4044bf8e17abb2c0117272669d8da01";
+                //TwilioClient.Init(accountSid, authToken);
 
-                var message = MessageResource.Create(
-                    body: messageObject.Message,
-                    from: new Twilio.Types.PhoneNumber("+14403726082"),
-                    to: new Twilio.Types.PhoneNumber("+91" + messageObject.ToNumber)
-                );
-                successMessage_sms = !string.IsNullOrEmpty(message.Sid) ? string.Format("Sms sent successfully to : {0}", messageObject.ToNumber) : "Unable to send sms.";
+                //var message = MessageResource.Create(
+                //    body: messageObject.Message,
+                //    from: new Twilio.Types.PhoneNumber("+14403726082"),
+                //    to: new Twilio.Types.PhoneNumber("+91" + messageObject.ToNumber)
+                //);
+                //successMessage_sms = !string.IsNullOrEmpty(message.Sid) ? string.Format("Sms sent successfully to : {0}", messageObject.ToNumber) : "Unable to send sms.";
 
-                messageObject.ToNumber = string.Empty;
-                messageObject.Message = string.Empty;
-                values.Clear();
+                //messageObject.ToNumber = string.Empty;
+                //messageObject.Message = string.Empty;
+                //values.Clear();
                 return successMessage_sms;
             }
             return "Message is empty";
